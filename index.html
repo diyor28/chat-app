@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    <title>ChatApp</title>
+    <link rel="stylesheet" href="static/bootstrap-grid.min.css">
+    <link rel="stylesheet" href="static/bootstrap-reboot.min.css">
+    <link rel="stylesheet" href="static/custom.css">
+    <script src="static/vue.js"></script>
+    <script src="static/server.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            new Vue({
+                el: '#app',
+                data: {
+                    server: new Server(),
+                    groupName: "",
+                    message: "",
+                    joinModal: {
+                        name: "",
+                        show: true
+                    },
+                    toast: {
+                        message: "",
+                        show: false
+                    },
+                    activeChatId: null,
+                },
+                mounted() {
+                },
+                methods: {
+                    join() {
+                        this.server.join(this.joinModal.name)
+                        this.joinModal.show = false
+                        this.server.fetchUsers()
+                    },
+
+                    createGroup() {
+                        this.server.createGroup(this.groupName)
+                        this.groupName = ""
+                    },
+
+                    showToast(message) {
+                        this.toast.message = message
+                        this.toast.show = true
+                        setTimeout(() => {
+                            this.toast.show = false
+                        }, 3000)
+                    },
+
+                    messageTo() {
+                        if (!this.activeChatId) {
+                            this.showToast("Please select a chat first")
+                            return
+                        }
+                        this.server.sendToPerson(this.activeChatId, this.message)
+                        this.message = ""
+                    },
+
+                    isMyMessage(message) {
+                        return this.server.my_id === message.sender_id
+                    }
+                },
+                computed: {
+                    messages() {
+                        return this.server.get_messages(this.activeChatId)
+                    }
+                }
+            })
+        })
+    </script>
+    <style>
+    </style>
+</head>
+<body>
+<div id="app">
+    <div class="container-fluid">
+        <div class="row no-gutters">
+            <div class="col-3">
+                <div class="chat-list-wrapper">
+                    <ul class="chat-list">
+                        <li class="pointer" :class="{'active':person.id === activeChatId}"
+                            v-for="person in server.users" @click="activeChatId = person.id">
+                            {{ person.name }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-9">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="message-wrapper">
+                            <div class="message" v-for="message in messages">
+                                <div class="row no-gutters">
+                                    <div class="col-auto message-body"
+                                         :class="{'sender': !isMyMessage(message), 'order-1': isMyMessage(message)}">
+                                        {{message.message}}
+                                        <span>12:21</span>
+                                    </div>
+                                    <div class="col" :class="{'order-0': isMyMessage(message)}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row no-gutters">
+                    <div class="col">
+                        <input v-model="message" type="text" placeholder="Write a message..." class="form-input w-100">
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" @click="messageTo">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--    <input v-model="groupName"/>-->
+    <!--    <button @click="createGroup()">Create a group</button>-->
+    <div class="modal" :class="{'d-none': !joinModal.show}">
+        <div class="modal-content modal-transparent">
+            <div class="row no-gutters py-2 px-2">
+                <div class="col">
+                    <input class="form-input" placeholder="Your name" v-model="joinModal.name"/>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-sm btn-primary" @click="join">Join</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="toast" :class="{'show': toast.show}">
+        {{ toast.message }}
+    </div>
+</div>
+</body>
+</html>
