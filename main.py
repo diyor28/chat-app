@@ -45,7 +45,6 @@ class Server:
 
 	def process_message(self, websocket: WebSocketServerProtocol, message: dict):
 		event, data = message['event'], message['data']
-		print(event, data)
 		if event == 'message':
 			self.chat.message_to_person(data, self.clients[websocket])
 
@@ -68,7 +67,6 @@ class Server:
 			self.chat.remove_from_group(data)
 
 	async def handler(self, websocket: WebSocketServerProtocol):
-		print('New connection!')
 		client = Client(websocket)
 		self.clients[websocket] = client
 		try:
@@ -103,6 +101,7 @@ if __name__ == "__main__":
 	websocket_server = threading.Thread(target=run_websocket_server, daemon=True)
 	http_server.start()
 	websocket_server.start()
+	print("Open http://localhost:8000 in your browser to start chatting")
 	http_server.join()
 	websocket_server.join()
 

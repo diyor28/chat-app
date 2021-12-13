@@ -54,7 +54,6 @@ class Chat:
 		self.clients = {}
 
 	def client_joined(self, data: dict, client: Client):
-		print('Client joined')
 		client.name = data['name']
 		self.clients[client.id] = client
 		for member in self.clients.values():
@@ -62,7 +61,6 @@ class Chat:
 		return client
 
 	def client_disconnected(self, client: Client):
-		print('Client disconnected')
 		self.clients.pop(client.id, None)
 		for member in self.clients.values():
 			asyncio.create_task(member.websocket.emit("disconnected", {"id": client.id, "name": client.name}))
