@@ -19,6 +19,10 @@
                     message: "",
                     joinModal: {
                         name: "",
+                        show: true
+                    },
+                    groupModal: {
+                        name: "",
                         show: false
                     },
                     toast: {
@@ -136,7 +140,7 @@
             </div>
             <div class="col-auto">
                 <div class="d-flex justify-content-center align-items-center" style="height: 100%">
-                    <a href="#" class="add-group-btn">
+                    <a href="#" @click.prevent="groupModal.show = true" class="add-group-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-users"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                         <span>Add Group</span>
                     </a>
@@ -145,16 +149,6 @@
         </div>
         <div class="row no-gutters">
             <div class="col-3">
-                <div class="row no-gutters mb-4 d-none">
-                    <div class="col">
-                        <input v-model="groupName" placeholder="Group name" class="form-input">
-                    </div>
-                    <div class="col-auto">
-                        <button class="btn btn-sm btn-primary" @click="createGroup">
-                            +
-                        </button>
-                    </div>
-                </div>
                 <div class="chat-list-wrapper">
                     <ul class="chat-list">
                         <li class="pointer"
@@ -219,7 +213,7 @@
                                                     <div class="col-auto">
                                                         <div class="message-body-date d-flex flex-column justify-content-end align-items-end">
                                                             <span>12:21</span>
-                                                            <svg width="17" height="15" viewBox="0 0 17 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <svg v-if="isMyMessage(message)" width="17" height="15" viewBox="0 0 17 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                                 <path d="M1 9L4 12L11.5 3" stroke="black" stroke-miterlimit="10" stroke-linecap="square"/>
                                                                 <path d="M7.75 11.25L8.5 12L16 3" stroke="black" stroke-miterlimit="10" stroke-linecap="square"/>
                                                             </svg>
@@ -250,14 +244,50 @@
     </div>
     <!--    <input v-model="groupName"/>-->
     <!--    <button @click="createGroup()">Create a group</button>-->
-    <div class="modal" :class="{'d-none': !joinModal.show}">
-        <div class="modal-content modal-transparent">
-            <div class="row no-gutters py-2 px-2">
-                <div class="col">
-                    <input class="form-input" placeholder="Your name" v-model="joinModal.name"/>
+
+    <div class="modal" :class="{'visible': groupModal.show}">
+        <div class="modal__content">
+
+            <div class="container">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="pt-3 pb-3">
+                            <input v-model="groupName" placeholder="Group name" class="modal-input">
+                        </div>
+                    </div>
                 </div>
-                <div class="col-auto">
-                    <button class="btn btn-sm btn-primary" @click="join">Join</button>
+                <div class="row">
+                    <div class="col-12 justify-content-center d-flex">
+                        <button class="modal-btn mr-3 modal-btn-outline" @click="groupModal.show = false">
+                            Cancel
+                        </button>
+                        <button class="modal-btn" @click="createGroup">
+                            Add Group
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <a href="#" @click="groupModal.show = false" class="modal__close">&times;</a>
+        </div>
+    </div>
+
+    <div class="modal" :class="{'visible': joinModal.show}">
+        <div class="modal__content">
+            <div class="container">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="pt-3 pb-3">
+                            <input class="modal-input" placeholder="Your name" v-model="groupName"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 justify-content-center d-flex">
+                        <button class="modal-btn" @click="join">
+                            Join Chat
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
