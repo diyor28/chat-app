@@ -49,7 +49,7 @@
                         }, 3000)
                     },
 
-                    messageTo() {z
+                    messageTo() {
                         if (!this.activeChatId) {
                             this.showToast("Please select a chat first")
                             return
@@ -65,6 +65,10 @@
                 computed: {
                     messages() {
                         return this.server.get_messages(this.activeChatId)
+                    },
+
+                    currentChat() {
+                        return this.server.chats.find(el => el.id === this.activeChatId) || {}
                     }
                 }
             })
@@ -78,17 +82,32 @@
     <div class="container-fluid">
         <div class="row no-gutters">
             <div class="col-3">
+                <div class="row no-gutters mb-4">
+                    <div class="col">
+                        <input v-model="groupName" placeholder="Group name" class="form-input">
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-primary" @click="createGroup">
+                            +
+                        </button>
+                    </div>
+                </div>
                 <div class="chat-list-wrapper">
                     <ul class="chat-list">
-                        <li class="pointer" :class="{'active':person.id === activeChatId}"
-                            v-for="person in server.users" @click="activeChatId = person.id">
-                            {{ person.name }}
+                        <li class="pointer" :class="{'active':chat.id === activeChatId}"
+                            v-for="chat in server.chats" @click="activeChatId = chat.id">
+                            {{ chat.name }}
                         </li>
                     </ul>
                 </div>
             </div>
             <div class="col-9">
                 <div class="row">
+                    <div class="col-12">
+                        <div>
+                            {{currentChat.name}}
+                        </div>
+                    </div>
                     <div class="col-12">
                         <div class="message-wrapper">
                             <div class="message" v-for="message in messages">

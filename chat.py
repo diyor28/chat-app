@@ -57,7 +57,7 @@ class Chat:
 		client.name = data['name']
 		self.clients[client.id] = client
 		for member in self.clients.values():
-			asyncio.create_task(member.websocket.emit("joined", {"id": client.id, "name": client.name}))
+			asyncio.create_task(member.websocket.emit("joined", {"id": client.id, "name": client.name, "type": "user"}))
 		return client
 
 	def client_disconnected(self, client: Client):
@@ -65,18 +65,20 @@ class Chat:
 		for member in self.clients.values():
 			asyncio.create_task(member.websocket.emit("disconnected", {"id": client.id, "name": client.name}))
 
-	def fetch_users(self, sender: Client):
+	def fetch_chats(self, sender: Client):
 		result = []
 		for client in self.clients.values():
 			if client.id == sender.id:
 				continue
-			result.append({"id": client.id, "name": client.name})
-		asyncio.create_task(sender.websocket.emit("fetched_users", result))
+			result.append({"id": client.id, "name": client.name, "type": "user"})
+		for group in self.groups.values():
+			result.append({"id": group.id, "name": group.name, "type": "group"})
+		asyncio.create_task(sender.websocket.emit("fetched_chats", result))
 
 	def create_group(self, data: dict, owner: Client):
-		group = Group(owner=owner, name=data["group_name"])
+		group = Group(owner=owner, name=data["name"])
 		self.groups[group.id] = group
-		asyncio.create_task(owner.websocket.emit("group_created", {"id": group.id}))
+		asyncio.create_task(owner.websocket.emit("created_group", {"id": group.id, "name": group.name, "type": "group"}))
 
 	def message_to_person(self, data: dict, sender: Client):
 		client_id, message = data["client_id"], data["message"]

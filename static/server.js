@@ -50,11 +50,11 @@ class Server {
     constructor() {
         this.my_id = ""
         this.socket = new SocketWrapper()
-        this.users = []
+        this.chats = []
         this._messages = []
         this.socket.on("disconnected", (data) => {
-            let chatIdx = this.users.findIndex((chat => chat.id === data.id))
-            this.users.splice(chatIdx, 1)
+            let chatIdx = this.chats.findIndex((chat => chat.id === data.id))
+            this.chats.splice(chatIdx, 1)
         })
         this.socket.on("message", (data) => {
             this._messages.push(data)
@@ -63,7 +63,7 @@ class Server {
 
     _listenForJoins() {
         this.socket.on("joined", (data) => {
-            this.users.push(data)
+            this.chats.push(data)
         })
     }
 
@@ -74,10 +74,10 @@ class Server {
     }
 
     async fetchUsers() {
-        const response_promise = new Promise((resolve => this.socket.once('fetched_users', resolve)))
-        await this.socket.emit("fetch_users", {})
+        const response_promise = new Promise((resolve => this.socket.once('fetched_chats', resolve)))
+        await this.socket.emit("fetch_chats", {})
         const response = await response_promise
-        this.users = response
+        this.chats = response
         return response
     }
 
@@ -101,9 +101,10 @@ class Server {
     }
 
     async createGroup(groupName) {
-        const data = {event: "create_group", data: {group_name: groupName}}
-        await this.socket.emit(data)
-        const response = await new Promise((resolve => this.socket.once('group_created', resolve)))
+        const data = {name: groupName}
+        await this.socket.emit("create_group", data)
+        const response = await new Promise((resolve => this.socket.once('created_group', resolve)))
+        this.chats.push(response)
         return response.id
     }
 

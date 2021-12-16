@@ -44,12 +44,13 @@ class Server:
 		return json.loads(message)
 
 	def process_message(self, websocket: WebSocketServerProtocol, message: dict):
+		print(message)
 		event, data = message['event'], message['data']
 		if event == 'message':
 			self.chat.message_to_person(data, self.clients[websocket])
 
-		if event == 'fetch_users':
-			self.chat.fetch_users(self.clients[websocket])
+		if event == 'fetch_chats':
+			self.chat.fetch_chats(self.clients[websocket])
 
 		if event == 'join':
 			self.chat.client_joined(data, self.clients[websocket])
@@ -86,6 +87,7 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
 def run_http_server():
 	handler_object = MyHttpRequestHandler
 
+	socketserver.TCPServer.allow_reuse_address = True
 	my_server = socketserver.TCPServer(("", HTTP_PORT), handler_object)
 
 	my_server.serve_forever()
