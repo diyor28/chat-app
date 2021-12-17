@@ -57,7 +57,10 @@ class Server {
             this.chats.splice(chatIdx, 1)
         })
         this.socket.on("message", (data) => {
-            this._messages.push(data)
+            this._messages.push({...data, read: false})
+        })
+        this.socket.on("fetched_chats", (data) => {
+            this.chats = data
         })
     }
 
@@ -67,18 +70,63 @@ class Server {
         })
     }
 
-    get_messages(chatId) {
+    _findGroup(groupId) {
+        return this.chats.find(el => el.id === groupId)
+    }
+
+    nonGroupMembers(groupId) {
+        if (!groupId)
+            return []
+
+        let result = []
+        let group = this._findGroup(groupId)
+        const memberIds = group.members.map(el => el.id)
+        for (const chat of this.chats) {
+            if (!memberIds.includes[chat.id] && chat.type === "user") {
+                result.push(chat)
+            }
+        }
+        return result
+    }
+
+    groupMembers(groupId) {
+        if (!groupId)
+            return []
+        let group = this._findGroup(groupId)
+        if (!group)
+            return []
+        return group.members
+    }
+
+    getMessages(chatId) {
         return this._messages.filter(message => {
-            return message.sender_id === chatId || message.sender_id === this.my_id
+            if (message.sender_id === this.my_id && message.client_id === chatId)
+                return true
+            if (message.group_id === chatId)
+                return true
+            return message.sender_id === chatId && !message.group_id
+        })
+    }
+
+    unreadMsgCount(chatId) {
+        let messages = this.getMessages(chatId)
+        let counter = 0;
+        for (const message of messages) {
+            if (!message.read)
+                counter++;
+        }
+        return counter
+    }
+
+    markRead(chatId) {
+        let messages = this.getMessages(chatId)
+        messages.forEach((message) => {
+            message.read = true
         })
     }
 
     async fetchUsers() {
-        const response_promise = new Promise((resolve => this.socket.once('fetched_chats', resolve)))
         await this.socket.emit("fetch_chats", {})
-        const response = await response_promise
-        this.chats = response
-        return response
     }
 
     async join(name) {
@@ -90,13 +138,14 @@ class Server {
     }
 
     async sendToPerson(clientId, message) {
-        this._messages.push({message, "sender_id": this.my_id})
+        this._messages.push({message, sender_id: this.my_id, read: true, client_id: clientId})
         const data = {message, client_id: clientId}
         await this.socket.emit("message", data)
     }
 
     async sendToGroup(groupId, message) {
         const data = {message: message, group_id: groupId}
+        this._messages.push({...data, sender_id: this.my_id, read: true})
         await this.socket.emit("message_to_group", data)
     }
 
@@ -109,12 +158,12 @@ class Server {
     }
 
     async addToGroup(groupId, memberId) {
-        const data = {event: "add_to_group", data: {group_id: groupId, member_id: memberId}}
-        await this.socket.emit(data)
+        const data = {group_id: groupId, client_id: memberId}
+        await this.socket.emit("add_to_group", data)
     }
 
     async removeFromGroup(groupId, memberId) {
-        const data = {event: "remove_from_group", data: {group_id: groupId, member_id: memberId}}
-        await this.socket.emit(data)
+        const data = {group_id: groupId, client_id: memberId}
+        await this.socket.emit("remove_from_group", data)
     }
 }

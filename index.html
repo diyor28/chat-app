@@ -15,7 +15,6 @@
                 el: '#app',
                 data: {
                     server: new Server(),
-                    groupName: "",
                     message: "",
                     joinModal: {
                         name: "",
@@ -25,6 +24,14 @@
                         name: "",
                         show: false
                     },
+                    addModal: {
+                        groupId: "",
+                        show: false
+                    },
+                    removeModal: {
+                        groupId: "",
+                        show: false
+                    },
                     toast: {
                         message: "",
                         show: false
@@ -32,52 +39,6 @@
                     activeChatId: null
                 },
                 mounted() {
-                    this.server.chats = [
-                        { name: 'Tom', id: 1 },
-                        { name: 'Diyor', id: 2 },
-                        { name: 'Otabek', id: 3 },
-                        { name: 'Alice', id: 4 },
-                        { name: 'Google', id: 5 },
-                        { name: 'Tesla', id: 6 },
-                        { name: 'Nicola', id: 7 },
-                        { name: 'Bob', id: 8 },
-                        { name: 'Jane', id: 9 },
-                        { name: 'Tomas', id: 10 },
-                        { name: 'Microsoft', id: 11 },
-                        { name: 'Ardinue', id: 12 },
-                        { name: 'Farhod aka', id: 13 },
-                        { name: 'Jenifer', id: 14 },
-                    ];
-                    this.server._messages = [
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, hello world', sender_id: 1 },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                        { message: 'This is a test message, send here me, here from my messages', sender_id: '' },
-                    ];
                 },
                 methods: {
                     join() {
@@ -86,9 +47,30 @@
                         this.server.fetchUsers()
                     },
 
+                    showAddModal() {
+                        this.addModal.show = true
+                        this.addModal.groupId = this.activeChatId
+                    },
+
+                    hideAddModal() {
+                        this.addModal.show = false
+                        this.addModal.groupId = ""
+                    },
+
+                    showRemoveModal() {
+                        this.removeModal.show = true
+                        this.removeModal.groupId = this.activeChatId
+                    },
+
+                    hideRemoveModal() {
+                        this.removeModal.show = false
+                        this.removeModal.groupId = ""
+                    },
+
                     createGroup() {
-                        this.server.createGroup(this.groupName)
-                        this.groupName = ""
+                        this.server.createGroup(this.groupModal.name)
+                        this.groupModal.name = ""
+                        this.groupModal.show = false
                     },
 
                     showToast(message) {
@@ -104,7 +86,10 @@
                             this.showToast("Please select a chat first")
                             return
                         }
-                        this.server.sendToPerson(this.activeChatId, this.message)
+                        if (this.currentChat.type === "group")
+                            this.server.sendToGroup(this.activeChatId, this.message)
+                        else
+                            this.server.sendToPerson(this.activeChatId, this.message)
                         this.message = ""
                     },
 
@@ -114,11 +99,20 @@
 
                     getAbbrName(name) {
                         return name.charAt(0).toUpperCase();
+                    },
+
+                    unreadMessagesCount(chat) {
+                        return this.server.unreadMsgCount(chat.id)
+                    },
+
+                    setActiveChat(chatId) {
+                        this.activeChatId = chatId
+                        this.server.markRead(chatId)
                     }
                 },
                 computed: {
                     messages() {
-                        return this.server.get_messages(this.activeChatId)
+                        return this.server.getMessages(this.activeChatId)
                     },
 
                     currentChat() {
@@ -154,7 +148,7 @@
                         <li class="pointer"
                             :class="{'active':chat.id === activeChatId}"
                             v-for="(chat, id) in server.chats"
-                            @click="activeChatId = chat.id"
+                            @click="setActiveChat(chat.id)"
                         >
                             <div class="row">
                                 <div class="col-auto">
@@ -171,8 +165,8 @@
                                 </div>
                                 <div class="col-auto d-flex flex-column justify-content-between align-items-center">
                                     <span class="chat-list-date">17:56</span>
-                                    <div class="chat-list-badge">
-                                        <span>{{ id + 10 }}</span>
+                                    <div class="chat-list-badge" v-if="unreadMessagesCount(chat)">
+                                        <span>{{ unreadMessagesCount(chat) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -187,14 +181,36 @@
                             <div class="col-auto">
                                 <div class="chat-list-avatar-wrapper mr-3">
                                     <div class="chat-list-avatar">
-                                        {{ getAbbrName( currentChat.name ) }}
+                                        {{ getAbbrName(currentChat.name) }}
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-auto">
+                            <div class="col">
                                 <div class="chat-list-name d-flex justify-content-around flex-column align-items-start">
                                     <span>{{ currentChat.name }}</span>
                                     <span class="sub">Last Seen: 24 September 2021 - 14:35</span>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <div v-if="currentChat.type === 'group'">
+                                    <button class="btn btn-sm" @click="showAddModal()">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                             viewBox="0 0 24 24"
+                                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                             stroke-linejoin="round" class="feather feather-plus">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                    </button>
+                                    <button class="btn btn-sm" @click="showRemoveModal()">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                             viewBox="0 0 24 24"
+                                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                             stroke-linejoin="round" class="feather feather-trash">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -230,9 +246,11 @@
                             <div class="form-send d-flex justify-content-end align-items-end">
                                 <input v-model="message" class="form-input w-100" type="text" placeholder="Write a message...">
                                 <button class="btn-send" @click="messageTo">
-                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"
+                                         xmlns="http://www.w3.org/2000/svg">
                                         <path d="M17 1L8 10" stroke="black" stroke-miterlimit="10"/>
-                                        <path d="M17 1L11.75 16L8 10L2 6.25L17 1Z" stroke="black" stroke-miterlimit="10" stroke-linecap="square"/>
+                                        <path d="M17 1L11.75 16L8 10L2 6.25L17 1Z" stroke="black" stroke-miterlimit="10"
+                                              stroke-linecap="square"/>
                                     </svg>
                                 </button>
                             </div>
@@ -242,17 +260,94 @@
             </div>
         </div>
     </div>
-    <!--    <input v-model="groupName"/>-->
-    <!--    <button @click="createGroup()">Create a group</button>-->
+
+    <div class="modal" :class="{'visible': addModal.show}">
+        <div class="modal__content">
+            <div class="container">
+                <div class="row my-2" v-for="chat in server.nonGroupMembers(addModal.groupId)">
+                    <div class="col-auto">
+                        <div class="chat-list-avatar-wrapper">
+                            <div class="chat-list-avatar">
+                                {{ getAbbrName(chat.name) }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col p-0">
+                        <div class="chat-list-name">
+                            {{chat.name}}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm" @click="server.addToGroup(addModal.groupId, chat.id)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="feather feather-plus">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 justify-content-center d-flex">
+                        <button class="modal-btn mr-3 modal-btn-outline" @click="hideAddModal()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <a href="#" @click="hideAddModal()" class="modal__close">&times;</a>
+        </div>
+    </div>
+
+    <div class="modal" :class="{'visible': removeModal.show}">
+        <div class="modal__content">
+            <div class="container">
+                <div class="row my-2" v-for="chat in server.groupMembers(removeModal.groupId)">
+                    <div class="col-auto">
+                        <div class="chat-list-avatar-wrapper">
+                            <div class="chat-list-avatar">
+                                {{ getAbbrName(chat.name) }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col p-0">
+                        <div class="chat-list-name">
+                            {{chat.name}}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm" @click="server.removeFromGroup(removeModal.groupId, chat.id)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="feather feather-trash">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 justify-content-center d-flex">
+                        <button class="modal-btn mr-3 modal-btn-outline" @click="hideRemoveModal()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <a href="#" @click="hideRemoveModal()" class="modal__close">&times;</a>
+        </div>
+    </div>
 
     <div class="modal" :class="{'visible': groupModal.show}">
         <div class="modal__content">
-
             <div class="container">
                 <div class="row">
                     <div class="col-12">
                         <div class="pt-3 pb-3">
-                            <input v-model="groupName" placeholder="Group name" class="modal-input">
+                            <input v-model="groupModal.name" placeholder="Group name" class="modal-input">
                         </div>
                     </div>
                 </div>
@@ -267,7 +362,6 @@
                     </div>
                 </div>
             </div>
-
             <a href="#" @click="groupModal.show = false" class="modal__close">&times;</a>
         </div>
     </div>
@@ -278,7 +372,7 @@
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="pt-3 pb-3">
-                            <input class="modal-input" placeholder="Your name" v-model="groupName"/>
+                            <input class="modal-input" placeholder="Your name" v-model="joinModal.name"/>
                         </div>
                     </div>
                 </div>

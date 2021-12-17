@@ -62,10 +62,10 @@ class Server:
 			self.chat.create_group(data, self.clients[websocket])
 
 		if event == 'add_to_group':
-			self.chat.add_to_group(data)
+			self.chat.add_to_group(data, self.clients[websocket])
 
 		if event == 'remove_from_group':
-			self.chat.remove_from_group(data)
+			self.chat.remove_from_group(data, self.clients[websocket])
 
 	async def handler(self, websocket: WebSocketServerProtocol):
 		client = Client(websocket)
